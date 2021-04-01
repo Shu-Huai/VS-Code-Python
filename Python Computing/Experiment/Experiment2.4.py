@@ -12,3 +12,4 @@ for line in lines:
         counts[reversedwords.index(line)] = counts[reversedwords.index(line)] + 1
 for i in range(len(reversedwords)):
     print(reversedwords[i] + ": " + str(counts[i]))
+file.close()
