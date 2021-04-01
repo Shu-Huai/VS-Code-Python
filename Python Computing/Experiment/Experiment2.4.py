@@ -26,7 +26,13 @@ for i in range(len(keyWords)):
 for word in words:
     if word in keyWords:
         wordsCount[keyWords.index(word)] = wordsCount[keyWords.index(word)] + 1
+sum = 0
+for i in range(len(keyWords)):
+    sum += wordsCount[i]
+wordsFrequency = []
+for i in range(len(keyWords)):
+    wordsFrequency.append(wordsCount[i] / sum)
 print('Frequency of occurrence of the words in "CountingWords.txt" which is in the keywords list:')
 for i in range(len(keyWords)):
-    print(keyWords[i] + ": " + str(wordsCount[i]))
+    print(keyWords[i] + ": " + "%.3f" % wordsFrequency[i])
 file.close()
