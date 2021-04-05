@@ -202,3 +202,31 @@ for i in range(0, 101):
         formatCount += 1
         if not formatCount % 5:
             print("\n", end="")
+#%%
+import random
+
+number = random.randint(0, 9)
+guessNumber = -1
+while guessNumber != number:
+    guessNumber = int(input("Please input a number: "))
+    if guessNumber > number:
+        print("Too big.")
+    if guessNumber < number:
+        print("Too small.")
+print("Congratulations! You win.")
+
+
+# %%
+def Fibonacci(n):
+    a = 0
+    b = 1
+    for i in range(n):
+        a, b = b, a + b
+    return a
+
+
+sum = 0
+for i in range(1, 21):
+    print("Number %d: " % i, end="")
+    print(Fibonacci(i - 1))
+# %%
