@@ -380,6 +380,8 @@ PrintChars("!", "9", 10)
 
 # %%
 def IsPrime(number):
+    if number < 2:
+        raise Exception
     for i in range(2, number):
         if not number % i:
             return 0
@@ -387,8 +389,11 @@ def IsPrime(number):
 
 
 number = int(input("Please input a number: "))
-if IsPrime(number):
-    print("%d is prime." % number)
-else:
-    print("%d is not prime." % number)
+try:
+    if IsPrime(number):
+        print("%d is prime." % number)
+    else:
+        print("%d is not prime." % number)
+except Exception:
+    print("%d is not prime and not prime." % number)
 # %%
