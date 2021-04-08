@@ -2,9 +2,9 @@ import requests
 from bs4 import BeautifulSoup
 
 
-def GetUrls(n):
+def GetUrls(pages):
     urls = []
-    for i in range(n):
+    for i in range(pages):
         urlExample = "https://store.steampowered.com/search/?specials=1&page={}".format(i + 1)
         urls.append(urlExample)
     return urls
@@ -15,7 +15,7 @@ def GetMaxPage():
     url.append("https://store.steampowered.com/search/?specials=1&page=1")
     soup = GetSoup(GetContent(url))
     node = soup[0].find_all("div", class_="search_pagination_right")
-    return int(node[0].contents[5].contents[0]) + 1
+    return int(node[0].contents[5].contents[0])
 
 
 def GetContent(urls):
@@ -98,7 +98,10 @@ def Sort(games):
     return games
 
 
-urls = GetUrls(int(input("Please input the pages you want, %d is the max: " % GetMaxPage())))
+pages = input("Please input the pages you want, min is 1, max is %d, default is 5: " % GetMaxPage())
+if pages == "":
+    pages = "5"
+urls = GetUrls(int(pages))
 contentList = GetContent(urls)
 gameNames = GetGameName(contentList)
 gameUrls = GetGameUrl(contentList)
@@ -108,3 +111,9 @@ games = Sort(games)
 for i in range(len(games)):
     print("Game: %s.\nLink: %s." % (games[i]["gameName"], games[i]["gameUrl"]))
     print("Discount: %s, Price: %s, Previous Price: %s.\n" % (games[i]["discount"], games[i]["nowPrice"], games[i]["previousPrice"]))
+filename = "Steam Discount Getter.txt"
+with open(filename, 'w', encoding='utf-8') as file_object:
+    file_object.write("Here is the Steam discount information for this week.\n")
+    for i in range(len(games)):
+        file_object.write("Game: %s.\nLink: %s.\n" % (games[i]["gameName"], games[i]["gameUrl"]))
+        file_object.write("Discount: %s, Price: %s, Previous Price: %s.\n\n" % (games[i]["discount"], games[i]["nowPrice"], games[i]["previousPrice"]))
