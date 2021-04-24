@@ -11,7 +11,7 @@ def IsAbbreviable(word):
     return None
 
 
-def print_seq(word, *, root: bool = True):
+def printLongestWord(word, *, root: bool = True):
     global words
     arrow = ' → '
     if len(word) > 1:
@@ -20,7 +20,7 @@ def print_seq(word, *, root: bool = True):
             if abbrevedWord in {'a', 'i'}:
                 print(abbrevedWord, end=arrow)
                 break
-            elif abbrevedWord in words and print_seq(abbrevedWord, root=False) is not None:
+            elif abbrevedWord in words and printLongestWord(abbrevedWord, root=False) is not None:
                 break
         else:
             return None
@@ -40,4 +40,4 @@ for word in words:
         word = IsAbbreviable(word)
         if word is not None:
             result = word
-print_seq(result)
+printLongestWord(result)

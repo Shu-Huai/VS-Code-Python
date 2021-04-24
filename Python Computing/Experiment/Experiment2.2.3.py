@@ -14,7 +14,7 @@ def GetFrequency(classNum, studentNumPerClass):
                 day = randint(1, 31)
             else:
                 day = randint(1, 30)
-            birthdays[i].append({"month": month, "day": day, "class": i})
+            birthdays[i].append({"month": month, "day": day})
     sum = 0
     tag = 0
     for i in range(classNum):
