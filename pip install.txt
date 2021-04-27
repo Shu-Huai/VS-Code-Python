@@ -9,3 +9,4 @@ pip install yapf
 pip install selenium
 pip install pyinstaller
 pip install matplotlib
+pip install python-docx

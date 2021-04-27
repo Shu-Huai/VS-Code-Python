@@ -1,5 +1,9 @@
+import docx
 import requests
 from bs4 import BeautifulSoup
+from docx import Document
+from docx.shared import Pt
+from docx.enum.dml import MSO_THEME_COLOR_INDEX
 
 
 def GetMaxPage():
@@ -101,6 +105,35 @@ def Sort(games):
     return games
 
 
+def SaveToDocx(games):
+    docxFile = Document()
+    docxFile.styles["Normal"].font.name = "Times New Roman"
+    docxFile.styles["Normal"].font.size = Pt(12)
+    docxFile.add_paragraph("Here is the Steam discount information for this week.")
+    for i in range(len(games)):
+        paragraph = docxFile.add_paragraph()
+        paragraph.add_run("Game: %s.\nLink: " % games[i]["gameName"])
+        part = paragraph.part
+        ralationId = part.relate_to(games[i]["gameUrl"], docx.opc.constants.RELATIONSHIP_TYPE.HYPERLINK, is_external=True)
+        hyperLink = docx.oxml.shared.OxmlElement("w:hyperlink")
+        hyperLink.set(
+            docx.oxml.shared.qn("r:id"),
+            ralationId,
+        )
+        r = docx.oxml.shared.OxmlElement('w:r')
+        rPr = docx.oxml.shared.OxmlElement('w:rPr')
+        r.append(rPr)
+        r.text = games[i]["gameUrl"]
+        hyperLink.append(r)
+        run = paragraph.add_run()
+        run._r.append(hyperLink)
+        run.font.color.theme_color = MSO_THEME_COLOR_INDEX.HYPERLINK
+        run.font.underline = True
+        paragraph.add_run("\nDiscount: %s, Price: %s, Previous Price: %s.\n" % (games[i]["discount"], games[i]["nowPrice"], games[i]["previousPrice"]))
+        docxFile.add_picture(r"Steam Discount Information Getter\Game Cover\Darkest Dungeon®.png")
+    docxFile.save(r"Steam Discount Information Getter\Steam Discount Information.docx")
+
+
 pages = input("Please input the pages you want, min is 1, max is %d, default is 5: " % GetMaxPage())
 try:
     pages = int(pages)
@@ -117,8 +150,4 @@ for i in range(len(games)):
     print("Game: %s.\nLink: %s." % (games[i]["gameName"], games[i]["gameUrl"]))
     print("Discount: %s, Price: %s, Previous Price: %s.\n" % (games[i]["discount"], games[i]["nowPrice"], games[i]["previousPrice"]))
 filename = "Steam Discount Getter.md"
-with open(filename, 'w', encoding='utf-8') as file_object:
-    file_object.write("Here is the Steam discount information for this week.\n")
-    for i in range(len(games)):
-        file_object.write("Game: %s.\nLink: %s.\n" % (games[i]["gameName"], games[i]["gameUrl"]))
-        file_object.write("Discount: %s, Price: %s, Previous Price: %s.\n\n" % (games[i]["discount"], games[i]["nowPrice"], games[i]["previousPrice"]))
+SaveToDocx(games)
