@@ -4,17 +4,19 @@ from bs4 import BeautifulSoup
 from docx import Document
 from docx.shared import Pt
 from docx.enum.dml import MSO_THEME_COLOR_INDEX
+from urllib import request
+import os
 
 
 def GetMaxPage():
     url = []
     url.append("https://store.steampowered.com/search/?specials=1&page=1")
-    soup = GetSoup(GetContent(url))
+    soup = GetSoup(GetUrlContents(url))
     node = soup[0].find_all("div", class_="search_pagination_right")
     return int(node[0].contents[5].contents[0])
 
 
-def GetUrls(pages):
+def CreateUrls(pages):
     urls = []
     for i in range(pages):
         urlExample = "https://store.steampowered.com/search/?specials=1&page={}".format(i + 1)
@@ -22,8 +24,8 @@ def GetUrls(pages):
     return urls
 
 
-def GetContent(urls):
-    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.116 Safari/537.36'}
+def GetUrlContents(urls):
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_16_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Chrome/ 90.0.4430.93 Safari/605.1.15'}
     responseList = []
     contentList = []
     for i in range(len(urls)):
@@ -42,7 +44,7 @@ def GetSoup(contentList):
     return soup
 
 
-def GetGameName(contentList):
+def GetGameNames(contentList):
     names = []
     soup = GetSoup(contentList)
     for i in range(len(contentList)):
@@ -52,7 +54,7 @@ def GetGameName(contentList):
     return names
 
 
-def GetGameUrl(contentList):
+def GetGameUrls(contentList):
     urls = []
     soup = GetSoup(contentList)
     urlPrefix = "https://store.steampowered.com/"
@@ -64,7 +66,7 @@ def GetGameUrl(contentList):
     return urls
 
 
-def GetPrice(contentList):
+def GetPrices(contentList):
     previousPrices = []
     nowPrices = []
     discounts = []
@@ -89,18 +91,61 @@ def GetPrice(contentList):
     return previousPrices, nowPrices, discounts
 
 
+def DeleteGameCovers(path):
+    for i in os.listdir(path):
+        file = path + "\\" + i
+        if os.path.isfile(file):
+            os.remove(file)
+        else:
+            DeleteGameCovers(file)
+
+
+def GetGameCovers(contentList):
+    if not os.path.exists(r"Steam Discount Information Getter\Game Cover"):
+        os.makedirs(r"Steam Discount Information Getter\Game Cover")
+    DeleteGameCovers(r"Steam Discount Information Getter\Game Cover")
+    soup = GetSoup(contentList)
+    count = 0
+    for i in range(len(contentList)):
+        for node in soup[i].find_all("div", class_="col search_capsule"):
+            request.urlretrieve(node.contents[0].attrs["src"], r"Steam Discount Information Getter\Game Cover" + "\\" + str(count) + ".png")
+            count += 1
+
+
 def Merge(names, urls, previousPrices, nowPrices, discounts):
     games = []
     for i in range(len(names)):
-        games.append(dict(gameName=names[i], gameUrl=urls[i], previousPrice=previousPrices[i], nowPrice=nowPrices[i], discount=discounts[i]))
+        diction = dict(gameName=names[i], gameUrl=urls[i], previousPrice=previousPrices[i], nowPrice=nowPrices[i], discount=discounts[i], gameCoverNumber=i)
+        games.append(diction)
     return games
 
 
-def Sort(games):
+def FormatSortRule(sortRule):
+    inputError = bool(0)
+    if sortRule == "A" or sortRule == "a" or sortRule == "0":
+        sortRule = "gameName"
+    elif sortRule == "B" or sortRule == "b" or sortRule == "1":
+        sortRule = "previousPrice"
+    elif sortRule == "C" or sortRule == "c" or sortRule == "2":
+        sortRule = "nowPrice"
+    elif sortRule == "D" or sortRule == "d" or sortRule == "3":
+        sortRule = "discount"
+    elif sortRule == "E" or sortRule == "e" or sortRule == "4":
+        sortRule = "gameCoverNumber"
+    else:
+        inputError = 1
+    return sortRule, inputError
+
+
+def Sort(games, sortRule):
     for i in range(len(games)):
-        games[i]["discount"] = int(games[i]["discount"].strip("%"))
-    games = sorted(games, key=lambda x: (x["discount"], x['gameName']))
+        games[i]["previousPrice"] = float(games[i]["previousPrice"].strip("¥"))
+        games[i]["nowPrice"] = float(games[i]["nowPrice"].strip("¥"))
+        games[i]["discount"] = float(games[i]["discount"].strip("%"))
+    games = sorted(games, key=lambda x: (x[sortRule], x["gameName"]))
     for i in range(len(games)):
+        games[i]["previousPrice"] = "¥ " + str(games[i]["previousPrice"])
+        games[i]["nowPrice"] = "¥ " + str(games[i]["nowPrice"])
         games[i]["discount"] = str(games[i]["discount"]) + "%"
     return games
 
@@ -109,10 +154,11 @@ def SaveToDocx(games):
     docxFile = Document()
     docxFile.styles["Normal"].font.name = "Times New Roman"
     docxFile.styles["Normal"].font.size = Pt(12)
-    docxFile.add_paragraph("Here is the Steam discount information for this week.")
+    docxFile.add_paragraph().add_run("Here is the Steam discount information for this week.").font.bold = True
     for i in range(len(games)):
         paragraph = docxFile.add_paragraph()
-        paragraph.add_run("Game: %s.\nLink: " % games[i]["gameName"])
+        paragraph.add_run("Game: %s.\n" % games[i]["gameName"]).font.bold = True
+        paragraph.add_run("Link: ")
         part = paragraph.part
         ralationId = part.relate_to(games[i]["gameUrl"], docx.opc.constants.RELATIONSHIP_TYPE.HYPERLINK, is_external=True)
         hyperLink = docx.oxml.shared.OxmlElement("w:hyperlink")
@@ -129,8 +175,9 @@ def SaveToDocx(games):
         run._r.append(hyperLink)
         run.font.color.theme_color = MSO_THEME_COLOR_INDEX.HYPERLINK
         run.font.underline = True
-        paragraph.add_run("\nDiscount: %s, Price: %s, Previous Price: %s.\n" % (games[i]["discount"], games[i]["nowPrice"], games[i]["previousPrice"]))
-        docxFile.add_picture(r"Steam Discount Information Getter\Game Cover\Darkest Dungeon®.png")
+        paragraph.add_run("\nDiscount: %s, " % games[i]["discount"])
+        paragraph.add_run("Price: %s, Previous Price: %s." % (games[i]["nowPrice"], games[i]["previousPrice"]))
+        docxFile.add_picture(r"Steam Discount Information Getter\Game Cover" + "\\" + str(games[i]["gameCoverNumber"]) + ".png")
     docxFile.save(r"Steam Discount Information Getter\Steam Discount Information.docx")
 
 
@@ -139,15 +186,24 @@ try:
     pages = int(pages)
 except ValueError:
     pages = 5
-urls = GetUrls(pages)
-contentList = GetContent(urls)
-gameNames = GetGameName(contentList)
-gameUrls = GetGameUrl(contentList)
-previousPrices, nowPrices, discounts = GetPrice(contentList)
+inputError = bool(1)
+while inputError:
+    print("A/a/0 represents game name.\nB/b/1 represents previous price.\nC/c/2 represents now price.")
+    print("D/d/3 represents discount.\nE/e/4 represents the original order.")
+    sortRule = input("Please input the sort rule: ")
+    sortRule, inputError = FormatSortRule(sortRule)
+    if inputError:
+        print("Input error, please input again.")
+urls = CreateUrls(pages)
+contentList = GetUrlContents(urls)
+gameNames = GetGameNames(contentList)
+gameUrls = GetGameUrls(contentList)
+previousPrices, nowPrices, discounts = GetPrices(contentList)
+GetGameCovers(contentList)
 games = Merge(gameNames, gameUrls, previousPrices, nowPrices, discounts)
-games = Sort(games)
+games = Sort(games, sortRule)
 for i in range(len(games)):
     print("Game: %s.\nLink: %s." % (games[i]["gameName"], games[i]["gameUrl"]))
-    print("Discount: %s, Price: %s, Previous Price: %s.\n" % (games[i]["discount"], games[i]["nowPrice"], games[i]["previousPrice"]))
-filename = "Steam Discount Getter.md"
+    print("Discount: %s, " % games[i]["discount"], end="")
+    print("Price: %s, Previous Price: %s.\n" % (games[i]["nowPrice"], games[i]["previousPrice"]))
 SaveToDocx(games)
