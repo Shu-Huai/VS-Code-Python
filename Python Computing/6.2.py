@@ -32,18 +32,7 @@ class Vecter:
         result.z_ = self.z_ / number
         return result
 
-    def __floordiv__(self, number):
-        result = Vecter()
-        result.x_ = self.x_ // number
-        result.y_ = self.y_ // number
-        result.z_ = self.z_ // number
-        return result
-
-    def Show(self):
-        print((self.x_, self.y_, self.z_))
-
 
 v1 = Vecter(1, 2, 3)
 v2 = Vecter(4, 5, 6)
 v3 = v1 + v2
-v3.Show()
