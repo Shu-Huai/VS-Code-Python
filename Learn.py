@@ -405,4 +405,37 @@ def TestDefalt(a=0):
 
 b = 0
 TestDefalt(b=10)
+
+
+# %%
+class A(object):
+    def __init__(self):
+        self.__private()
+        self.public()
+
+    def __private(self):
+        print('__private() method in A')
+
+    def public(self):
+        print('public() method in A')
+
+
+class B(A):
+    def __init__(self):
+        A.__init__(self)
+        self.__private()
+        self.public()
+
+    def __private(self):
+        print('__private() method in B')
+
+    def publicB(self):
+        print('public() method in B')
+
+
+a = A()
+b = B()
+print(dir(a))
+print(dir(b))
+
 # %%
