@@ -1,18 +1,39 @@
 import sys
 import os
-from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QDialog, QLabel, QPushButton, QApplication, QMainWindow
+from PyQt5 import QtWidgets
 from PyQt5.QtCore import QRect
 from PyQt5.QtGui import QFont
 from PyQt5.QtGui import QIcon
 import docx
-from requests import get
-from requests.exceptions import ConnectionError
+import requests
 from bs4 import BeautifulSoup
 from docx import Document
 from docx.shared import Pt
+from docx.oxml.ns import qn
 from docx.enum.dml import MSO_THEME_COLOR_INDEX
 from urllib import request
+
+from docx.image.image import Image
+from docx.shared import Inches
+
+
+@property
+def image_width(self):
+    if (self.horz_dpi == 0):
+        return Inches(self.px_width / 72)
+    return Inches(self.px_width / self.horz_dpi)
+
+
+@property
+def image_height(self):
+    if (self.vert_dpi == 0):
+        return Inches(self.px_height / 72)
+    return Inches(self.px_height / self.vert_dpi)
+
+
+Image.width = image_width
+Image.height = image_height
 
 
 class SteamDiscountInformationGetter(object):
@@ -39,8 +60,8 @@ class SteamDiscountInformationGetter(object):
         contentList = []
         for i in range(len(urls)):
             try:
-                response = get(urls[i], headers=headers)
-            except ConnectionError:
+                response = requests.get(urls[i], headers=headers)
+            except requests.exceptions.ConnectionError:
                 MainWindow.EjectConnectionErrorDialog(MainWindow)
                 exit()
             responseList.append(response)
@@ -113,7 +134,8 @@ class SteamDiscountInformationGetter(object):
         count = 0
         for i in range(len(contentList)):
             for node in soup[i].find_all("div", class_="col search_capsule"):
-                request.urlretrieve(node.contents[0].attrs["src"], r"Steam Discount Information Getter\Game Cover" + "\\" + str(count) + ".png")
+                url = node.contents[0].attrs["src"].replace("capsule_sm_120.jpg", "header.jpg")
+                request.urlretrieve(url, r"Steam Discount Information Getter\Game Cover" + "\\" + str(count) + ".png")
                 count += 1
 
     def Merge(names, urls, previousPrices, nowPrices, discounts):
@@ -147,7 +169,8 @@ class SteamDiscountInformationGetter(object):
 
     def SaveToDocx(games):
         docxFile = Document()
-        docxFile.styles["Normal"].font.name = "Times New Roman"
+        docxFile.styles["Normal"].font.name = u"宋体"
+        docxFile.styles['Normal']._element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')
         docxFile.styles["Normal"].font.size = Pt(12)
         docxFile.add_paragraph().add_run("Here is the Steam discount information for this week.").font.bold = True
         for i in range(len(games)):
